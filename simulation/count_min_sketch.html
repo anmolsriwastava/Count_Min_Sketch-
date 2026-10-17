@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Count-Min Sketch: Spotify Wrapped Simulation</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#111;--line:#fff;--text:#fff;--accent:#FF4C4C}
+body{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:700;background:var(--bg);color:var(--text);line-height:1.5}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;padding:80px 40px;border-bottom:2px solid var(--line)}
+.header, h1, .sub{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+h1{font-size:80px;line-height:1.1;font-weight:900;letter-spacing:-2px;margin-bottom:24px}
+h1 .red{color:var(--accent)}
+.sub{display:flex;align-items:center;gap:12px;font-size:32px;font-weight:700;color:#999}
+.sub svg{width:36px;height:36px;fill:#1DB954}
+.badge{border:2px solid var(--line);padding:6px 14px;font-size:14px;margin-left:8px}
+.container{max-width:1400px;margin:0 auto;padding:32px 40px 64px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}.header{padding:24px}.container{padding:24px}h1{font-size:48px}}
+.card{border:2px solid var(--line);padding:20px}
+.col{display:flex;flex-direction:column;gap:24px}
+.title{font-size:18px;font-weight:900;border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:16px}
+.head-row{display:grid;grid-template-columns:28px 1fr 70px 70px;gap:12px;padding:0 12px 8px;font-size:12px}
+.head-row span:nth-child(n+3){text-align:right}
+.song-row{display:grid;grid-template-columns:28px 1fr 70px 70px;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--line);margin-bottom:6px}
+.song-row.active{background:#fff;color:#111}
+.song-name{font-size:14px;font-weight:800}
+.song-artist{font-size:11px}
+.song-true,.song-est{text-align:right;font-variant-numeric:tabular-nums}
+.note{font-size:13px;margin-top:12px}
+.row{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:16px;font-size:14px}
+input[type=number]{width:64px;background:#111;color:#fff;border:2px solid #fff;padding:8px;text-align:center;font:inherit;margin-left:8px}
+button{background:#111;color:#fff;border:2px solid #fff;padding:10px 18px;font:inherit;font-size:13px;cursor:pointer}
+button:hover{background:#fff;color:#111}
+button.solid{background:#fff;color:#111}
+button.solid:hover{background:#ddd}
+button:focus-visible,input:focus-visible,.query-chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
+.sec-title{font-size:18px;font-weight:900}
+.sec-sub{font-size:13px}
+.matrix-wrap{overflow-x:auto}
+table.matrix{border-collapse:separate;border-spacing:3px;margin:0 auto}
+table.matrix th{font-size:11px;padding:4px 6px;min-width:36px;text-align:center}
+table.matrix td{width:36px;height:36px;text-align:center;border:1px solid #fff;font-size:13px;font-variant-numeric:tabular-nums}
+table.matrix td.row-label{border:none;text-align:right;padding-right:8px;font-size:11px;white-space:nowrap}
+table.matrix td.hot{background:var(--accent);color:#000;border-color:var(--accent)}
+table.matrix td.hl{outline:3px solid #fff;outline-offset:1px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px}
+.legend div{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border:1px solid #fff}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px;padding-top:16px;border-top:2px solid var(--line)}
+.speed{display:flex;align-items:center;gap:8px;font-size:12px;margin-left:auto}
+input[type=range]{width:100px;accent-color:#fff}
+.stream{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;min-height:56px;padding:10px;border:1px solid var(--line)}
+.stream-item{padding:4px 10px;font-size:11px;border:1px solid #fff;white-space:nowrap}
+.stream-item.done{opacity:.35}
+.stream-item.current{background:#fff;color:#111}
+.query-bar{display:flex;gap:8px;flex-wrap:wrap}
+.query-chip{padding:8px 14px;border:2px solid #fff;font-size:12px;cursor:pointer;background:#111;color:#fff;font:inherit;font-size:12px}
+.query-chip:hover{background:#fff;color:#111}
+.log{border:1px solid var(--line);padding:14px;font-family:Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;max-height:260px;overflow-y:auto}
+.log-line{padding:2px 0}
+.log-line.head{border-top:1px solid #fff;margin-top:6px;padding-top:6px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-overlay.show{display:flex}
+.modal-content{background:#111;border:2px solid #fff;padding:28px;width:420px;max-width:90%}
+.math-box{border:1px solid #fff;padding:14px;margin:14px 0;font-family:Menlo,Consolas,monospace;font-size:13px}
+.math-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #fff}
+.math-row:last-child{border:none}
+.modal-close{width:100%;margin-top:16px;background:#fff;color:#111;font-weight:900}
+.explain p{margin-bottom:12px;font-size:14px;font-weight:600;line-height:1.8;max-width:900px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Probability - II<br><span class="red">Count Min Sketch.</span></h1>
+    <div class="sub">A simulation using
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.5 14.4c-.18.3-.57.39-.87.21-2.4-1.47-5.43-1.8-9-.99-.34.08-.68-.13-.76-.47-.08-.34.13-.68.47-.76 3.9-.89 7.24-.5 9.94 1.14.3.18.39.57.21.87zm1.2-2.67c-.23.37-.71.49-1.08.26-2.75-1.69-6.94-2.18-10.2-1.19-.42.13-.86-.11-.98-.53-.13-.42.11-.86.53-.98 3.72-1.13 8.33-.58 11.48 1.36.37.23.49.71.26 1.08zm.1-2.78C14.53 8.99 9.16 8.81 6.02 9.76c-.5.15-1.03-.13-1.18-.63-.15-.5.13-1.03.63-1.18 3.6-1.09 9.53-.88 13.3 1.36.45.27.6.85.33 1.3-.27.45-.85.6-1.3.33z"/></svg>
+      Wrapped
+    </div>
+  </div>
+  <div><span class="badge">Input stream</span><span class="badge" id="eventsBadge">0 / 0 events</span></div>
+</div>
+
+<div class="container">
+  <div class="grid">
+    <div class="card">
+      <div class="title">Songs and Actual Counts</div>
+      <div class="head-row"><span>#</span><span>Song</span><span>Actual</span><span>Estimate</span></div>
+      <div id="songsList"></div>
+      <p class="note">Actual is the exact play count. Estimate is the sketch's value and is never below the actual count.</p>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="title">Parameters</div>
+        <p class="note" style="margin:0 0 16px">Change the number of rows (hash functions) and columns (buckets) to see how collisions affect accuracy.</p>
+        <div class="row">
+          <label>Rows (d): <input type="number" id="inputD" value="3" min="1" max="20"></label>
+          <label>Columns (w): <input type="number" id="inputW" value="8" min="1" max="100"></label>
+        </div>
+        <button class="solid" onclick="applyParams()">Apply</button>
+      </div>
+
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Count-Min Sketch Matrix</div>
+            <div class="sec-sub" id="matrixSubTitle">3 rows (hash functions) × 8 columns, all cells start at 0</div>
+          </div>
+          <div class="badge" id="matrixStatus">Idle</div>
+        </div>
+        <div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
+        <div class="legend">
+          <div><span class="sw"></span>Zero</div>
+          <div><span class="sw" style="background:#FF4C4C;border-color:#FF4C4C"></span>Non-zero count</div>
+          <div><span class="sw" style="outline:2px solid #fff"></span>Cell under update or query</div>
+        </div>
+        <div class="controls">
+          <button class="solid" id="btnStep" onclick="stepOnce()">Step</button>
+          <button class="solid" id="btnPlay" onclick="togglePlay()">Play</button>
+          <button id="btnFast" onclick="fastForward()">Fast Forward</button>
+          <button onclick="resetSim()">Reset</button>
+          <div class="speed"><span>Speed</span><input type="range" id="speed" min="1" max="10" value="5"><span id="speedVal">500ms</span></div>
+        </div>
+        <div class="stream" id="stream"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="title">Frequency Query</div>
+      <div class="query-bar" id="queryBar"></div>
+      <div class="modal-overlay" id="queryModal" onclick="this.classList.remove('show')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+          <div class="title">Query Result</div>
+          <div id="queryResult"></div>
+          <button class="modal-close" onclick="document.getElementById('queryModal').classList.remove('show')">Close</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="title">Event Log</div>
+      <div class="log" id="log">
+        <div class="log-line">[sys] Initialized 3×8 matrix. All cells = 0.</div>
+        <div class="log-line">[sys] Press Step or Play to begin.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card explain">
+    <div class="title">Working Principle</div>
+    <p><b>1. Update.</b> Each time a song is played, its ID is passed through d hash functions. Each function returns a column index, and the cell at (row, column) is incremented by 1. The hash functions are treated as black boxes that spread songs uniformly and independently across columns.</p>
+    <p><b>2. Collisions.</b> When two different songs map to the same cell in a row, that cell counts both. Collisions cause overcounting and never undercounting, so every cell is an upper bound on the true count of each song that hashes to it.</p>
+    <p><b>3. Query.</b> To estimate how often song x was played, hash it with all d functions, read the d cells and take the minimum. For example, min(8, 6, 6) = 6 is the estimate. The true count is at most 6, and equals 6 when the row holding the minimum has no collision.</p>
+    <p><b>4. Memory.</b> The sketch uses a fixed d × w table regardless of how many distinct songs appear, so it needs far less memory than an exact hash map while giving close frequency estimates.</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const SONGS = [
+  { id: 'S1', name: 'Chahun Main Ya Naa',     artist: 'Arijit Singh',     h: [2, 5, 1] },
+  { id: 'S2', name: 'Milne Hai Mujhse Aayi',  artist: 'Arijit Singh',     h: [4, 1, 6] },
+  { id: 'S3', name: 'Jab Tak',                artist: 'Armaan Malik',     h: [2, 7, 3] },
+  { id: 'S4', name: 'Rabba',                  artist: 'Rahat Fateh Ali',  h: [6, 1, 3] },
+  { id: 'S5', name: 'Tum Hi Ho',              artist: 'Arijit Singh',     h: [5, 3, 7] },
+  { id: 'S6', name: 'Kesariya',               artist: 'Arijit Singh',     h: [1, 4, 2] },
+  { id: 'S7', name: 'Apna Bana Le',           artist: 'Arijit Singh',     h: [7, 6, 5] },
+  { id: 'S8', name: 'Raataan Lambiyan',       artist: 'Jubin Nautiyal',   h: [3, 2, 4] },
+  { id: 'S9', name: 'Pehla Pyaar',            artist: 'Armaan Malik',     h: [6, 3, 7] },
+  { id: 'S10',name: 'Tera Hone Laga Hoon',    artist: 'Atif Aslam',       h: [0, 5, 2] }
+];
+
+const STREAM = [
+  'S1','S2','S3','S1','S2','S1','S4','S5','S1','S3',
+  'S2','S1','S5','S1','S6','S7','S1','S2','S8','S3',
+  'S9','S10','S1','S6','S2','S7','S3','S5','S1','S4'
+];
+
+let ROWS = 3;
+let COLS = 8;
+
+function updateSongHashes() {
+  SONGS.forEach((s, idx) => {
+    if (!s.orig_h) s.orig_h = [...s.h];
+    if (ROWS === 3 && COLS === 8) {
+      s.h = [...s.orig_h];
+      return;
+    }
+    s.h = [];
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < s.id.length; i++) {
+      hash ^= s.id.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    for (let r = 0; r < ROWS; r++) {
+       let rHash = hash ^ (r * 0x5bd1e995);
+       rHash = Math.imul(rHash, 0xcc9e2d51);
+       rHash = (rHash >>> 13) ^ rHash;
+       s.h.push(Math.abs(rHash) % COLS);
+    }
+  });
+}
+
+function applyParams() {
+  const d = parseInt(document.getElementById('inputD').value);
+  const w = parseInt(document.getElementById('inputW').value);
+  if (!d || !w || d < 1 || w < 1) return;
+  ROWS = d;
+  COLS = w;
+  document.getElementById('matrixSubTitle').textContent = `${ROWS} rows (hash functions) × ${COLS} columns, all cells start at 0`;
+  updateSongHashes();
+  resetSim();
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let matrix = [];
+let trueCounts = {};
+let pointer = 0;
+let playing = false;
+let playTimer = null;
+let speedMs = 500;
+let collisions = 0;
+let cellsUpdated = 0;
+
+function resetSim() {
+  stopPlay();
+  matrix = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  trueCounts = {};
+  SONGS.forEach(s => trueCounts[s.id] = 0);
+  pointer = 0;
+  collisions = 0;
+  cellsUpdated = 0;
+
+  document.getElementById('log').innerHTML = `
+    <div class="log-line">[sys] Matrix reset. All cells = 0.</div>
+    <div class="log-line">[sys] Stream pointer at 0 / ${STREAM.length}.</div>
+  `;
+  document.getElementById('queryResult').innerHTML = '';
+  document.getElementById('matrixStatus').textContent = 'Idle';
+
+  renderMatrix();
+  renderSongs();
+  renderStream();
+  renderQueryBar();
+}
+
+function renderMatrix(hlCells = [], hitCells = []) {
+  const tbl = document.getElementById('matrix');
+  let html = '<thead><tr><th></th>';
+  for (let c = 0; c < COLS; c++) html += `<th>col ${c}</th>`;
+  html += '</tr></thead><tbody>';
+  for (let r = 0; r < ROWS; r++) {
+    html += `<tr><td class="row-label">h${r + 1}</td>`;
+    for (let c = 0; c < COLS; c++) {
+      const v = matrix[r][c];
+      const isHL = hlCells.some(([rr, cc]) => rr === r && cc === c);
+      let cls = '';
+      if (v > 0) cls += ' hot';
+      if (isHL) cls += ' hl';
+      html += `<td class="${cls}" data-cell="${r}-${c}">${v || ''}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+function renderSongs(activeId = null) {
+  const el = document.getElementById('songsList');
+  el.innerHTML = SONGS.map((s, i) => {
+    const trueC = trueCounts[s.id] || 0;
+    let est = null;
+    if (pointer > 0 || trueC > 0) {
+      const vals = s.h.map((col, r) => matrix[r][col]);
+      est = Math.min(...vals);
+    }
+    return `
+      <div class="song-row ${activeId === s.id ? 'active' : ''}">
+        <div>${i + 1}</div>
+        <div><div class="song-name">${s.name}</div><div class="song-artist">${s.artist}</div></div>
+        <div class="song-true">${trueC}</div>
+        <div class="song-est">${est === null ? '-' : est}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderStream() {
+  const el = document.getElementById('stream');
+  el.innerHTML = STREAM.map((sid, i) => {
+    const s = SONGS.find(x => x.id === sid);
+    let cls = '';
+    if (i < pointer) cls = 'done';
+    else if (i === pointer) cls = 'current';
+    return `<div class="stream-item ${cls}" title="${s.name}">${s.name}</div>`;
+  }).join('');
+  document.getElementById('eventsBadge').textContent = `${pointer} / ${STREAM.length} events`;
+}
+
+function renderQueryBar() {
+  const el = document.getElementById('queryBar');
+  el.innerHTML = SONGS.map(s =>
+    `<button class="query-chip" onclick="querySong('${s.id}')">${s.name}</button>`
+  ).join('');
+}
+
+function processOne() {
+  if (pointer >= STREAM.length) return false;
+
+  const sid = STREAM[pointer];
+  const song = SONGS.find(s => s.id === sid);
+  trueCounts[sid]++;
+
+  const hlCells = [];
+  const hitCells = [];
+  let rowCollisions = 0;
+
+  song.h.forEach((col, r) => {
+    hlCells.push([r, col]);
+    if (matrix[r][col] > 0) rowCollisions++;
+    matrix[r][col]++;
+    cellsUpdated++;
+    hitCells.push([r, col]);
+  });
+
+  if (rowCollisions > 0) collisions += rowCollisions;
+
+  const log = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line head';
+  line.innerHTML =
+    `[${String(pointer + 1).padStart(2, '0')}] ${song.name} → ` +
+    `h₁=${song.h[0]}, h₂=${song.h[1]}, h₃=${song.h[2]}` +
+    (rowCollisions > 0
+      ? ` (${rowCollisions} collision${rowCollisions > 1 ? 's' : ''})`
+      : ` (no collision)`);
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+
+  pointer++;
+
+  renderMatrix(hlCells, hitCells);
+  renderSongs(sid);
+  renderStream();
+
+  document.getElementById('matrixStatus').textContent = `Processing: ${song.name}`;
+  return true;
+}
+
+function stepOnce() {
+  if (pointer >= STREAM.length) return;
+  processOne();
+}
+
+function togglePlay() {
+  if (playing) stopPlay();
+  else startPlay();
+}
+
+function startPlay() {
+  if (pointer >= STREAM.length) return;
+  playing = true;
+  document.getElementById('btnPlay').textContent = 'Pause';
+  const tick = () => {
+    if (!playing) return;
+    const ok = processOne();
+    if (!ok) { stopPlay(); return; }
+    playTimer = setTimeout(tick, speedMs);
+  };
+  playTimer = setTimeout(tick, speedMs);
+}
+
+function stopPlay() {
+  playing = false;
+  if (playTimer) clearTimeout(playTimer);
+  playTimer = null;
+  document.getElementById('btnPlay').textContent = 'Play';
+}
+
+function fastForward() {
+  stopPlay();
+  while (pointer < STREAM.length) {
+    const sid = STREAM[pointer];
+    const song = SONGS.find(s => s.id === sid);
+    trueCounts[sid]++;
+    song.h.forEach((col, r) => {
+      if (matrix[r][col] > 0) collisions++;
+      matrix[r][col]++;
+      cellsUpdated++;
+    });
+    pointer++;
+  }
+  renderMatrix();
+  renderSongs();
+  renderStream();
+
+  const log = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `[ff] Fast-forwarded to end of stream (${STREAM.length} events).`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  document.getElementById('matrixStatus').textContent = 'Stream complete';
+}
+
+document.getElementById('speed').addEventListener('input', (e) => {
+  const v = +e.target.value;
+  speedMs = 1100 - v * 100;
+  document.getElementById('speedVal').textContent = speedMs + 'ms';
+});
+
+function querySong(sid) {
+  const song = SONGS.find(s => s.id === sid);
+  const tc = trueCounts[sid] || 0;
+  const vals = song.h.map((col, r) => matrix[r][col]);
+  const est = Math.min(...vals);
+  const err = est - tc;
+
+  const hl = song.h.map((col, r) => [r, col]);
+  renderMatrix(hl, []);
+
+  const result = document.getElementById('queryResult');
+  document.getElementById('queryModal').classList.add('show');
+
+  result.innerHTML = `
+    <div style="font-size:18px;font-weight:800;margin-bottom:4px;">${song.name}</div>
+    <div style="font-size:13px;margin-bottom:12px;">Artist: ${song.artist}</div>
+    <div class="math-box">
+      <div class="math-row"><span>Hash mappings</span><span>[${vals.join(', ')}]</span></div>
+      <div class="math-row"><span>Estimate (min)</span><span>${est}</span></div>
+    </div>
+    <div class="math-box">
+      <div class="math-row"><span>Ground truth</span><span>${tc}</span></div>
+      <div class="math-row"><span>Error margin</span><span>${err > 0 ? '+' + err : '0'}</span></div>
+    </div>`;
+
+  const log = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `[qry] ${song.name} → min(${vals.join(', ')}) = ${est} (true ${tc}${err > 0 ? `, +${err}` : ''})`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+resetSim();
+</script>
+</body>
+</html>
