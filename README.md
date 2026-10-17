@@ -33,7 +33,7 @@ For any item x, with a matrix width w = **[e/epsilon]** and depth **(d = ln(1/de
  **[f(x) <= hat_f(x) <= f(x) + (epsilon*N) ]** 
 
 
-with probability at least **\(1 - \delta\)**.
+with probability at least **(1 - delta)**.
 
 
 
