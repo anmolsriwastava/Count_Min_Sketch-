@@ -1,6 +1,6 @@
 # Count-Min Sketch: A Probabilistic Data Structure
 
-> When exact counting is too expensive, approximate with a guarantee.
+**When exact counting is too expensive, approximate with a guarantee.**
 
 **A complete analysis, implementation, and interactive simulation of the Count-Min Sketch.**
 
