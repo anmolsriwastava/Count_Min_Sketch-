@@ -21,7 +21,7 @@ This repository contains:
 The simulation models a music streaming service (like Spotify). It processes a stream of song plays, updates the sketch in real-time, and demonstrates:
 - How collisions occur and inflate cell counts.
 - Why we take the **minimum** across rows.
-- How the empirical error margin stays below the theoretical bound \(\epsilon N\).
+- How the empirical error margin stays below the theoretical bound **[epsilon x N]**.
 
 ![Simulation Screenshot](simulation/screenshot.png)
 
