@@ -25,13 +25,13 @@ The simulation models a music streaming service (like Spotify). It processes a s
 
 ![Simulation Screenshot](simulation/screenshot.png)
 
-## 🧠 The Mathematics (TL;DR)
+##  The Mathematics (TL;DR)
 
-For any item \(x\), with a matrix width \(w = \lceil e/\epsilon \rceil\) and depth \(d = \lceil \ln(1/\delta) \rceil\):
+For any item x, with a matrix width w = **[e/epsilon]** and depth **(d = ln(1/delta)**:
 
-\[
- f(x) \le \hat{f}(x) \le f(x) + \epsilon N 
-\]
+
+ **[f(x) <= hat_f(x) <= f(x) + (epsilon*N) ]** 
+
 
 with probability at least **\(1 - \delta\)**.
 
