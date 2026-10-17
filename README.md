@@ -35,11 +35,7 @@ For any item x, with a matrix width w = **[e/epsilon]** and depth **(d = ln(1/de
 
 with probability at least **\(1 - \delta\)**.
 
-**Proof:**
-1. **Upper Bound:** Collisions only *add* to a cell. So every cell is \(\ge f(x)\).
-2. **Expected Noise:** By uniformity, expected collision noise in a row is \(\le N/w\).
-3. **Markov's Inequality:** \(P(X_i \ge \epsilon N) \le 1/(\epsilon w)\).
-4. **Independence:** All \(d\) rows fail with probability \(\le (1/(\epsilon w))^d = \delta\).
+
 
 
 *Probability II Project, October 2026.*
