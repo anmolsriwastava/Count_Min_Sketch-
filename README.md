@@ -9,7 +9,7 @@
 The **Count-Min Sketch (CMS)** is a probabilistic data structure used to estimate the frequencies of items in massive data streams. Instead of storing every distinct item (which requires \(O(N)\) memory), CMS uses a fixed-size matrix of counters and multiple hash functions to provide bounded-error estimates in \(O(1)\) memory relative to the stream size.
 
 This repository contains:
-1. A formal mathematical report on the structure and its \((\epsilon, \delta)\) guarantee.
+1. A formal mathematical report on the structure and its (epsilon, delta) guarantee.
 2. The presentation in the repo is useful for understanding the project interactively.
 3. An interactive, Spotify-themed web simulation to visualize how the sketch updates and queries data.
 
